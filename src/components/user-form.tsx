@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import React from "react";
-import { CalendarIcon, Eye, EyeOff } from "lucide-react";
+import { CalendarIcon, Eye, EyeOff, Sparkles } from "lucide-react";
 import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
@@ -75,6 +75,34 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, form]);
+
+  const generateStrongPassword = () => {
+    const length = 12;
+    const lowerCase = "abcdefghijklmnopqrstuvwxyz";
+    const upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const numbers = "0123456789";
+    const specialChars = "!@#$%^&*()_+~`|}{[]:;?><,./-=";
+    
+    const allChars = lowerCase + upperCase + numbers + specialChars;
+
+    let password = "";
+    // Ensure at least one of each character type
+    password += upperCase[Math.floor(Math.random() * upperCase.length)];
+    password += lowerCase[Math.floor(Math.random() * lowerCase.length)];
+    password += numbers[Math.floor(Math.random() * numbers.length)];
+    password += specialChars[Math.floor(Math.random() * specialChars.length)];
+
+    // Fill the rest of the password length
+    for (let i = password.length; i < length; i++) {
+        password += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+
+    // Shuffle the password to make it more random
+    const shuffledPassword = password.split('').sort(() => 0.5 - Math.random()).join('');
+    
+    form.setValue('password', shuffledPassword);
+    setShowPassword(true); // Show the generated password
+  };
 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -212,7 +240,13 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
             </div>
             <FormField control={form.control} name="password" render={({ field }) => (
                 <FormItem>
-                <FormLabel>{user ? "New Password (optional)" : "Password"}</FormLabel>
+                <div className="flex items-center justify-between">
+                    <FormLabel>{user ? "New Password (optional)" : "Password"}</FormLabel>
+                    <Button type="button" variant="outline" size="sm" onClick={generateStrongPassword}>
+                        <Sparkles className="mr-2 h-4 w-4 text-yellow-500" />
+                        Suggest Password
+                    </Button>
+                </div>
                 <div className="relative">
                     <FormControl>
                     <Input placeholder="••••••••" {...field} type={showPassword ? "text" : "password"}/>
