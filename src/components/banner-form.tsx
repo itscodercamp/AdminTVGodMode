@@ -19,7 +19,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { addBanner, updateBanner, MarketplaceBanner } from "@/lib/banners";
 import { Loader2, UploadCloud } from "lucide-react";
-import Image from "next/image";
 
 const formSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters long."),
@@ -151,7 +150,7 @@ export function BannerForm({ banner, onFormSubmit }: BannerFormProps) {
             <FormLabel>Banner Image</FormLabel>
             <div className="flex items-center gap-4">
                 {preview ? (
-                     &lt;img src={preview} alt="Banner preview" width={240} height={80} className="rounded-md object-cover" />
+                     <img src={preview} alt="Banner preview" width={240} height={80} className="rounded-md object-cover" />
                 ) : (
                 <div className="w-60 h-20 bg-secondary rounded-md flex items-center justify-center text-muted-foreground">
                     <UploadCloud className="w-8 h-8" />
