@@ -83,9 +83,7 @@ const ImageUploadField = ({
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
-    // If field.value is a server path, use it for preview.
-    // Otherwise, if it's an object URL, it's handled by handleFileChange
-    if (field.value && typeof field.value === 'string') {
+    if (field.value && typeof field.value === 'string' && !field.value.startsWith('blob:')) {
       setPreview(field.value);
     }
   }, [field.value]);
@@ -93,7 +91,6 @@ const ImageUploadField = ({
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Create a local URL for preview
       const localUrl = URL.createObjectURL(file);
       setPreview(localUrl);
       setImageFile(file);
@@ -108,7 +105,7 @@ const ImageUploadField = ({
       <FormLabel>{label}</FormLabel>
       <div className="flex items-center gap-4">
         {preview ? (
-          <Image src={preview} alt={`${label} preview`} width={80} height={60} className="rounded-md object-cover" />
+          &lt;img src={preview} alt={`${label} preview`} width={80} height={60} className="rounded-md object-cover" />
         ) : (
           <div className="w-20 h-[60px] bg-secondary rounded-md flex items-center justify-center text-muted-foreground">
              <UploadCloud className="w-6 h-6" />
@@ -127,7 +124,7 @@ const ImageUploadField = ({
             onClick={() => fileInputRef.current?.click()}
         >
           <UploadCloud className="mr-2 h-4 w-4" />
-          {preview ? 'Change Image' : 'Select Image'}
+          {preview ? 'Change' : 'Select'}
         </Button>
       </div>
        <FormMessage />
@@ -156,15 +153,14 @@ export function VehicleForm({ vehicle, onFormSubmit }: VehicleFormProps) {
   const [isLoading, setIsLoading] = React.useState(false);
   const { toast } = useToast();
   
-  // State to hold the actual File objects
   const [imageFiles, setImageFiles] = useState<Record<string, File | null>>({});
 
   const defaultValues = vehicle ? {
       ...vehicle,
-      year: vehicle.year || '',
+      year: vehicle.year || undefined,
       price: vehicle.price || 0,
-      regYear: vehicle.regYear || '',
-      mfgYear: vehicle.mfgYear || '',
+      regYear: vehicle.regYear || undefined,
+      mfgYear: vehicle.mfgYear || undefined,
       odometer: vehicle.odometer || 0,
       variant: vehicle.variant || '',
       rtoState: vehicle.rtoState || '',
@@ -196,7 +192,7 @@ export function VehicleForm({ vehicle, onFormSubmit }: VehicleFormProps) {
       img_engine: vehicle.img_engine || '',
       img_roof: vehicle.img_roof || '',
     } : {
-      year: '', regYear: '', mfgYear: '',
+      year: undefined, regYear: undefined, mfgYear: undefined,
       make: "", model: "", price: 0,
       category: undefined,
       status: "For Sale" as const, verified: false, serviceHistory: "Not Available" as const,
@@ -244,27 +240,21 @@ export function VehicleForm({ vehicle, onFormSubmit }: VehicleFormProps) {
   async function onSubmit(values: z.infer<typeof vehicleSchema>) {
     setIsLoading(true);
     
-    const uploadedImagePaths: Record<string, string> = {};
+    const finalValues = { ...values };
 
-    // Upload all new files
     for (const fieldName in imageFiles) {
         const file = imageFiles[fieldName];
         if (file) {
             const path = await uploadFile(file);
             if (path) {
-                uploadedImagePaths[fieldName] = path;
+                (finalValues as any)[fieldName] = path;
             } else {
-                // If any upload fails, stop the submission process
                 setIsLoading(false);
                 return;
             }
         }
     }
     
-    // Merge form values with uploaded paths
-    const finalValues = { ...values, ...uploadedImagePaths };
-
-    // Set imageUrl to img_front if it exists and imageUrl is not already set
     if(finalValues.img_front && !finalValues.imageUrl) {
       finalValues.imageUrl = finalValues.img_front;
     }
@@ -297,19 +287,19 @@ export function VehicleForm({ vehicle, onFormSubmit }: VehicleFormProps) {
             <FormField control={form.control} name="make" render={({ field }) => (<FormItem><FormLabel>Make</FormLabel><FormControl><Input placeholder="e.g., Maruti Suzuki" {...field} /></FormControl><FormMessage /></FormItem>)}/>
             <FormField control={form.control} name="model" render={({ field }) => (<FormItem><FormLabel>Model</FormLabel><FormControl><Input placeholder="e.g., Swift" {...field} /></FormControl><FormMessage /></FormItem>)}/>
             <FormField control={form.control} name="variant" render={({ field }) => (<FormItem><FormLabel>Variant</FormLabel><FormControl><Input placeholder="e.g., VXI" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-            <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Year (Legacy)</FormLabel><FormControl><Input type="number" placeholder={String(currentYear)} {...field} /></FormControl><FormMessage /></FormItem>)}/>
+            <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Year (Legacy)</FormLabel><FormControl><Input type="number" placeholder={String(currentYear)} {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
              <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>Status</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="For Sale">For Sale</SelectItem><SelectItem value="Paused">Paused</SelectItem><SelectItem value="Sold">Sold</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
             <FormField control={form.control} name="verified" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm md:col-span-2"><div className="space-y-0.5"><FormLabel>Verification Status</FormLabel><FormDescription>Is this vehicle verified by us?</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
         </FormSection>
 
         <FormSection title="Basic Details">
-            <FormField control={form.control} name="mfgYear" render={({ field }) => (<FormItem><FormLabel>Manufacturing Year</FormLabel><FormControl><Input type="number" placeholder={String(currentYear)} {...field} /></FormControl><FormMessage /></FormItem>)}/>
-            <FormField control={form.control} name="regYear" render={({ field }) => (<FormItem><FormLabel>Registration Year</FormLabel><FormControl><Input type="number" placeholder={String(currentYear)} {...field} /></FormControl><FormMessage /></FormItem>)}/>
+            <FormField control={form.control} name="mfgYear" render={({ field }) => (<FormItem><FormLabel>Manufacturing Year</FormLabel><FormControl><Input type="number" placeholder={String(currentYear)} {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
+            <FormField control={form.control} name="regYear" render={({ field }) => (<FormItem><FormLabel>Registration Year</FormLabel><FormControl><Input type="number" placeholder={String(currentYear)} {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
             <FormField control={form.control} name="regNumber" render={({ field }) => (<FormItem><FormLabel>Registration Number</FormLabel><FormControl><Input placeholder="e.g., MH12AB1234" {...field} /></FormControl><FormMessage /></FormItem>)}/>
             <FormField control={form.control} name="odometer" render={({ field }) => (<FormItem><FormLabel>Odometer (kms driven)</FormLabel><FormControl><Input type="number" placeholder="45000" {...field} /></FormControl><FormMessage /></FormItem>)}/>
         </FormSection>
         
-        <FormSection title="Technical & Other Details">
+        <FormSection title="Technical &amp; Other Details">
             <FormField control={form.control} name="fuelType" render={({ field }) => (<FormItem><FormLabel>Fuel Type</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Petrol">Petrol</SelectItem><SelectItem value="Diesel">Diesel</SelectItem><SelectItem value="CNG">CNG</SelectItem><SelectItem value="Electric">Electric</SelectItem><SelectItem value="LPG">LPG</SelectItem><SelectItem value="Hybrid">Hybrid</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
             <FormField control={form.control} name="transmission" render={({ field }) => (<FormItem><FormLabel>Transmission</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Manual">Manual</SelectItem><SelectItem value="Automatic">Automatic</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
             <FormField control={form.control} name="rtoState" render={({ field }) => (<FormItem><FormLabel>RTO State</FormLabel><FormControl><Input placeholder="e.g., Maharashtra" {...field} /></FormControl><FormMessage /></FormItem>)}/>
@@ -332,7 +322,7 @@ export function VehicleForm({ vehicle, onFormSubmit }: VehicleFormProps) {
         </FormSection>
 
         <FormSection title="Interior Images">
-            <FormField control={form.control} name="img_dashboard" render={({ field }) => (<ImageUploadField field={field} label="Dashboard & Odometer" setImageFile={(file) => setImageFile('img_dashboard', file)}/>)}/>
+            <FormField control={form.control} name="img_dashboard" render={({ field }) => (<ImageUploadField field={field} label="Dashboard &amp; Odometer" setImageFile={(file) => setImageFile('img_dashboard', file)}/>)}/>
             <FormField control={form.control} name="img_right_front_door" render={({ field }) => (<ImageUploadField field={field} label="Right Front Door Open" setImageFile={(file) => setImageFile('img_right_front_door', file)}/>)}/>
             <FormField control={form.control} name="img_right_back_door" render={({ field }) => (<ImageUploadField field={field} label="Right Back Door Open" setImageFile={(file) => setImageFile('img_right_back_door', file)}/>)}/>
         </FormSection>
@@ -357,6 +347,3 @@ export function VehicleForm({ vehicle, onFormSubmit }: VehicleFormProps) {
     </Form>
   );
 }
-
-    
-    
