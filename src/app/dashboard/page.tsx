@@ -1,8 +1,4 @@
 
-"use client";
-
-import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -10,7 +6,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Users, ShoppingBag, MessageSquareWarning, HelpCircle, Handshake, ClipboardList, UserX, MessageSquarePlus, Laptop, Loader2 } from "lucide-react";
+import { Users, ShoppingBag, MessageSquareWarning, HelpCircle, Handshake, ClipboardList, UserX, MessageSquarePlus, Laptop } from "lucide-react";
 import { getInspections, Inspection } from "@/lib/inspections";
 import { getUsers, getDeletedUsers, User } from "@/lib/users";
 import { getDealers, getDeletedDealers, Dealer } from "@/lib/dealers";
@@ -21,81 +17,44 @@ import { getMarketplaceInquiries, FullInquiry } from "@/lib/marketplace-inquirie
 import { getSellCarRequests, SellCarRequest } from "@/lib/sell-requests";
 import { getWebsiteInspections, WebsiteInspection } from "@/lib/website-inspections";
 import { Badge } from "@/components/ui/badge";
-
-type DashboardData = {
-  inspections: Inspection[];
-  users: Omit<User, "password">[];
-  dealers: Dealer[];
-  contacts: ContactSubmission[];
-  deletedUsers: Omit<User, "password">[];
-  deletedDealers: Dealer[];
-  marketplaceVehicles: MarketplaceVehicle[];
-  marketplaceContacts: MarketplaceContact[];
-  marketplaceInquiries: FullInquiry[];
-  sellRequests: SellCarRequest[];
-  websiteInspections: WebsiteInspection[];
-};
+import Link from "next/link";
 
 
-export default function DashboardPage() {
-  const router = useRouter();
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+async function getData() {
+    const [
+        inspections,
+        users,
+        dealers,
+        contacts,
+        deletedUsers,
+        deletedDealers,
+        marketplaceVehicles,
+        marketplaceContacts,
+        marketplaceInquiries,
+        sellRequests,
+        websiteInspections,
+    ] = await Promise.all([
+        getInspections(),
+        getUsers(),
+        getDealers(),
+        getContactSubmissions(),
+        getDeletedUsers(),
+        getDeletedDealers(),
+        getMarketplaceVehicles(),
+        getMarketplaceContactMessages(),
+        getMarketplaceInquiries(),
+        getSellCarRequests(),
+        getWebsiteInspections(),
+    ]);
+    return {
+        inspections, users, dealers, contacts, deletedUsers, deletedDealers, marketplaceVehicles,
+        marketplaceContacts, marketplaceInquiries, sellRequests, websiteInspections
+    };
+}
 
-  useEffect(() => {
-    async function fetchData() {
-      setIsLoading(true);
-      try {
-        const [
-          inspections,
-          users,
-          dealers,
-          contacts,
-          deletedUsers,
-          deletedDealers,
-          marketplaceVehicles,
-          marketplaceContacts,
-          marketplaceInquiries,
-          sellRequests,
-          websiteInspections,
-        ] = await Promise.all([
-          getInspections(),
-          getUsers(),
-          getDealers(),
-          getContactSubmissions(),
-          getDeletedUsers(),
-          getDeletedDealers(),
-          getMarketplaceVehicles(),
-          getMarketplaceContactMessages(),
-          getMarketplaceInquiries(),
-          getSellCarRequests(),
-          getWebsiteInspections(),
-        ]);
-        setData({
-          inspections, users, dealers, contacts, deletedUsers, deletedDealers, marketplaceVehicles,
-          marketplaceContacts, marketplaceInquiries, sellRequests, websiteInspections
-        });
-      } catch (e) {
-        console.error("Database fetch error on dashboard:", e);
-        setData(null);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!data) {
-     return <div className="text-center text-muted-foreground">Could not load dashboard data. Please try refreshing.</div>;
-  }
+export default async function DashboardPage() {
+  const data = await getData();
   
   const { 
     inspections, users, dealers, contacts, deletedUsers, deletedDealers,
@@ -212,8 +171,10 @@ export default function DashboardPage() {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
                             {websiteInspections.slice(0, 5).map((request) => (
-                                <tr key={request.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer" onClick={() => router.push('/dashboard/website-inspections')}>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{request.fullName}</td>
+                                <tr key={request.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                      <Link href="/dashboard/website-inspections" className="hover:underline">{request.fullName}</Link>
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{request.carMake} {request.carModel}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                                         <Badge variant={request.status === 'New' ? 'destructive' : 'default'}>
@@ -253,7 +214,9 @@ export default function DashboardPage() {
                         <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
                             {inspections.slice(0, 5).map((inspection) => (
                                 <tr key={inspection.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{inspection.id}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                                        <Link href="/dashboard/inspections" className="hover:underline">{inspection.id}</Link>
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{inspection.fullName}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{inspection.vehicleMake} {inspection.vehicleModel}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -279,3 +242,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
