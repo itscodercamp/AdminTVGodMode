@@ -281,15 +281,9 @@ export async function runQuery<T>(sql: string, params: any[] = []): Promise<T[]>
   const client = await getDbPool().connect();
   try {
     // Convert SQL `?` placeholders to PostgreSQL `$1, $2, ...` placeholders
-    const preparedSql = sql.replace(/\?/g, (match, index, original) => {
-        let count = 0;
-        for (let i = 0; i < original.indexOf(match); i++) {
-            if (original[i] === '?') {
-                count++;
-            }
-        }
-        return `$${count + 1}`;
-    });
+    let paramIndex = 1;
+    const preparedSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
+    
     const result = await client.query(preparedSql, params);
     // Convert column names from snake_case (PostgreSQL) to camelCase (JavaScript)
     return result.rows.map(row => {
@@ -313,21 +307,16 @@ export async function runQuery<T>(sql: string, params: any[] = []): Promise<T[]>
 export async function runStatement(sql: string, params: any[] = []): Promise<{ changes?: number }> {
     const client = await getDbPool().connect();
     try {
-        const preparedSql = sql.replace(/\?/g, (match, index, original) => {
-            let count = 0;
-            for (let i = 0; i < original.indexOf(match); i++) {
-                if (original[i] === '?') {
-                    count++;
-                }
-            }
-            return `$${count + 1}`;
-        });
+        let paramIndex = 1;
+        const preparedSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
+        
         const result = await client.query(preparedSql, params);
         return { changes: result.rowCount ?? 0 };
     } finally {
         client.release();
     }
 }
+
 
 // Function to fetch a single row
 export async function getSingleRow<T>(sql: string, params: any[] = []): Promise<T | undefined> {
