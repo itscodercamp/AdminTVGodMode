@@ -11,7 +11,10 @@ let db: Database<sqlite3.Database, sqlite3.Statement> | null = null;
 
 async function getDb() {
   if (!db) {
-    const dbPath = path.join(process.cwd(), 'dev.db');
+    // Use the SQLITE_PATH from environment variable if it exists, otherwise default to dev.db in the project root.
+    // This makes the database path configurable for different environments (like Docker).
+    const dbPath = process.env.SQLITE_PATH || path.join(process.cwd(), 'dev.db');
+    
     console.log(`Database path: ${dbPath}`);
     try {
         db = await open({
