@@ -36,7 +36,7 @@ async function initializeDb() {
           password TEXT NOT NULL,
           phone TEXT,
           dob TEXT NOT NULL,
-          joiningDate TEXT NOT NULL,
+          "joiningDate" TEXT NOT NULL,
           designation TEXT NOT NULL,
           status TEXT NOT NULL,
           "deletionReason" TEXT,
@@ -280,7 +280,17 @@ initializeDb().catch(err => {
 export async function runQuery<T>(sql: string, params: any[] = []): Promise<T[]> {
   const client = await getDbPool().connect();
   try {
-    const result = await client.query(sql, params);
+    // Convert SQL `?` placeholders to PostgreSQL `$1, $2, ...` placeholders
+    const preparedSql = sql.replace(/\?/g, (match, index, original) => {
+        let count = 0;
+        for (let i = 0; i < original.indexOf(match); i++) {
+            if (original[i] === '?') {
+                count++;
+            }
+        }
+        return `$${count + 1}`;
+    });
+    const result = await client.query(preparedSql, params);
     // Convert column names from snake_case (PostgreSQL) to camelCase (JavaScript)
     return result.rows.map(row => {
         const newRow: { [key: string]: any } = {};
@@ -300,11 +310,20 @@ export async function runQuery<T>(sql: string, params: any[] = []): Promise<T[]>
 }
 
 // Helper function to execute a statement (INSERT, UPDATE, DELETE)
-export async function runStatement(sql: string, params: any[] = []): Promise<{ rowCount?: number }> {
+export async function runStatement(sql: string, params: any[] = []): Promise<{ changes?: number }> {
     const client = await getDbPool().connect();
     try {
-        const result = await client.query(sql, params);
-        return { rowCount: result.rowCount ?? 0 };
+        const preparedSql = sql.replace(/\?/g, (match, index, original) => {
+            let count = 0;
+            for (let i = 0; i < original.indexOf(match); i++) {
+                if (original[i] === '?') {
+                    count++;
+                }
+            }
+            return `$${count + 1}`;
+        });
+        const result = await client.query(preparedSql, params);
+        return { changes: result.rowCount ?? 0 };
     } finally {
         client.release();
     }
