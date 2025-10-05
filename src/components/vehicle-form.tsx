@@ -105,7 +105,7 @@ const ImageUploadField = ({
       <FormLabel>{label}</FormLabel>
       <div className="flex items-center gap-4">
         {preview ? (
-          &lt;img src={preview} alt={`${label} preview`} width={80} height={60} className="rounded-md object-cover" />
+          <Image src={preview} alt={`${label} preview`} width={80} height={60} className="rounded-md object-cover" />
         ) : (
           <div className="w-20 h-[60px] bg-secondary rounded-md flex items-center justify-center text-muted-foreground">
              <UploadCloud className="w-6 h-6" />
@@ -347,3 +347,5 @@ export function VehicleForm({ vehicle, onFormSubmit }: VehicleFormProps) {
     </Form>
   );
 }
+
+    
