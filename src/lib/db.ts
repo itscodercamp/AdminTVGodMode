@@ -294,5 +294,3 @@ export async function getSingleRow<T>(sql: string, params: any[] = []): Promise<
     const db = await getDb();
     return db.get<T>(sql, params);
 }
-
-    
