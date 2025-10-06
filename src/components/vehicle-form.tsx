@@ -23,6 +23,15 @@ import { Switch } from "./ui/switch";
 import { Loader2, UploadCloud } from "lucide-react";
 import Image from "next/image";
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+
+const getFullImageUrl = (path: string | null | undefined) => {
+  if (!path) return null;
+  if (path.startsWith('http') || path.startsWith('blob:')) return path;
+  return `${appUrl}${path}`;
+};
+
+
 const currentYear = new Date().getFullYear();
 
 const vehicleSchema = z.object({
@@ -79,13 +88,12 @@ const ImageUploadField = ({
   label: string;
   setImageFile: (file: File | null) => void;
 }) => {
-  const [preview, setPreview] = useState(field.value || null);
+  const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
-    if (field.value && typeof field.value === 'string' && !field.value.startsWith('blob:')) {
-      setPreview(field.value);
-    }
+    const fullUrl = getFullImageUrl(field.value);
+    setPreview(fullUrl);
   }, [field.value]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,7 +103,8 @@ const ImageUploadField = ({
       setPreview(localUrl);
       setImageFile(file);
     } else {
-      setPreview(null);
+      const fullUrl = getFullImageUrl(field.value);
+      setPreview(fullUrl);
       setImageFile(null);
     }
   };
@@ -347,5 +356,3 @@ export function VehicleForm({ vehicle, onFormSubmit }: VehicleFormProps) {
     </Form>
   );
 }
-
-    

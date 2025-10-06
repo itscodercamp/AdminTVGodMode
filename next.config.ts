@@ -28,7 +28,7 @@ const remotePatterns: NextConfig['images']['remotePatterns'] = [
 
 if (appUrl) {
   remotePatterns.push({
-    protocol: 'https',
+    protocol: appUrl.startsWith('localhost') ? 'http' : 'https',
     hostname: appUrl,
     port: '',
     pathname: '/**',

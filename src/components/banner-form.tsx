@@ -19,6 +19,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { addBanner, updateBanner, MarketplaceBanner } from "@/lib/banners";
 import { Loader2, UploadCloud } from "lucide-react";
+import Image from "next/image";
+
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+
+const getFullImageUrl = (path: string | null | undefined) => {
+  if (!path) return null;
+  if (path.startsWith('http') || path.startsWith('blob:')) return path;
+  return `${appUrl}${path}`;
+};
+
 
 const formSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters long."),
@@ -36,8 +46,13 @@ export function BannerForm({ banner, onFormSubmit }: BannerFormProps) {
   const { toast } = useToast();
   
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState(banner?.imageUrl || null);
+  const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    const fullUrl = getFullImageUrl(banner?.imageUrl);
+    setPreview(fullUrl);
+  }, [banner]);
 
   const defaultValues = banner ? 
     { title: banner.title, status: banner.status, imageUrl: banner.imageUrl } : 
@@ -56,7 +71,8 @@ export function BannerForm({ banner, onFormSubmit }: BannerFormProps) {
       setImageFile(file);
       form.setValue("imageUrl", localUrl); // Temporary value for preview
     } else {
-      setPreview(banner?.imageUrl || null);
+      const fullUrl = getFullImageUrl(banner?.imageUrl);
+      setPreview(fullUrl);
       setImageFile(null);
       form.setValue("imageUrl", banner?.imageUrl || "");
     }
@@ -150,7 +166,7 @@ export function BannerForm({ banner, onFormSubmit }: BannerFormProps) {
             <FormLabel>Banner Image</FormLabel>
             <div className="flex items-center gap-4">
                 {preview ? (
-                     <img src={preview} alt="Banner preview" width={240} height={80} className="rounded-md object-cover" />
+                     <Image src={preview} alt="Banner preview" width={240} height={80} className="rounded-md object-cover" />
                 ) : (
                 <div className="w-60 h-20 bg-secondary rounded-md flex items-center justify-center text-muted-foreground">
                     <UploadCloud className="w-8 h-8" />

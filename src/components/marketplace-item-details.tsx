@@ -2,10 +2,19 @@
 "use client";
 
 import Image from "next/image";
-import type { ItemDetails } from "@/app/dashboard/marketplace/page";
+import type { ItemDetails } from "./marketplace-client";
 import { Badge } from "./ui/badge";
 import { cn } from "@/lib/utils";
 import { differenceInDays, parseISO, format } from "date-fns";
+
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+
+const getFullImageUrl = (path: string | null | undefined) => {
+  if (!path) return null;
+  if (path.startsWith('http')) return path;
+  return `${appUrl}${path}`;
+};
+
 
 const DetailItem = ({ label, value, isVertical = false }: { label: string, value: React.ReactNode, isVertical?: boolean }) => {
     if (value === null || value === undefined || value === '') return null;
@@ -18,10 +27,11 @@ const DetailItem = ({ label, value, isVertical = false }: { label: string, value
 }
 
 const ImagePreviewItem = ({ label, src }: { label: string, src: string | null | undefined }) => {
-    if (!src) return null;
+    const fullSrc = getFullImageUrl(src);
+    if (!fullSrc) return null;
     return (
         <div className="flex flex-col items-center gap-2 text-center">
-            <Image src={src} alt={label} width={120} height={90} className="rounded-md object-cover border" />
+            <Image src={fullSrc} alt={label} width={120} height={90} className="rounded-md object-cover border" />
             <span className="text-xs text-muted-foreground">{label}</span>
         </div>
     );
@@ -35,7 +45,7 @@ export function MarketplaceItemDetails({ item }: { item: ItemDetails }) {
          <>
             {vehicle.imageUrl && (
                 <div className="flex justify-center py-4">
-                    <Image src={vehicle.imageUrl} alt={`${vehicle.make} ${vehicle.model}`} width={250} height={150} className="rounded-lg object-cover" data-ai-hint="car side" />
+                    <Image src={getFullImageUrl(vehicle.imageUrl)!} alt={`${vehicle.make} ${vehicle.model}`} width={250} height={150} className="rounded-lg object-cover" data-ai-hint="car side" />
                 </div>
             )}
             <DetailItem label="Listing ID" value={data.id} />

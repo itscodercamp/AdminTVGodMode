@@ -42,6 +42,13 @@ import { BannerForm } from "@/components/banner-form";
 import { getMarketplaceInquiries, FullInquiry, updateMarketplaceInquiryStatus, deleteMarketplaceInquiry } from "@/lib/marketplace-inquiries";
 import { getMarketplaceContactMessages, MarketplaceContact, updateMarketplaceContactStatus, deleteMarketplaceContact } from "@/lib/marketplace-contact";
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+
+const getFullImageUrl = (path: string | null | undefined) => {
+  if (!path) return 'https://placehold.co/100x60/eee/ccc?text=No+Image';
+  if (path.startsWith('http')) return path;
+  return `${appUrl}${path}`;
+};
 
 const pendingVehicles: any[] = [];
 
@@ -368,7 +375,7 @@ export function MarketplaceClient({ initialData }: MarketplaceClientProps) {
                     <TableRow key={vehicle.id}>
                       <TableCell>
                         <div className="flex items-center gap-4">
-                            <Image src={vehicle.imageUrl || 'https://placehold.co/100x60/eee/ccc?text=No+Image'} alt={`${vehicle.make} ${vehicle.model}`} width={100} height={60} className="rounded-md object-cover" data-ai-hint="car side" />
+                            <Image src={getFullImageUrl(vehicle.imageUrl)} alt={`${vehicle.make} ${vehicle.model}`} width={100} height={60} className="rounded-md object-cover" data-ai-hint="car side" />
                             <div>
                                 <div className="font-medium">{vehicle.make} {vehicle.model} ({vehicle.year})</div>
                                 <div className="text-sm text-muted-foreground">{vehicle.id.substring(0,8)}...</div>
@@ -512,7 +519,7 @@ export function MarketplaceClient({ initialData }: MarketplaceClientProps) {
                     <TableRow key={vehicle.id}>
                        <TableCell>
                         <div className="flex items-center gap-4">
-                            <Image src={vehicle.imageUrl} alt={vehicle.make} width={100} height={60} className="rounded-md object-cover" data-ai-hint="car side" />
+                            <Image src={getFullImageUrl(vehicle.imageUrl)} alt={vehicle.make} width={100} height={60} className="rounded-md object-cover" data-ai-hint="car side" />
                             <div>
                                 <div className="font-medium">{vehicle.make} {vehicle.model}</div>
                                 <div className="text-sm text-muted-foreground">{vehicle.id}</div>
@@ -762,7 +769,7 @@ export function MarketplaceClient({ initialData }: MarketplaceClientProps) {
                     ) : banners.length > 0 ? banners.map((banner) => (
                       <TableRow key={banner.id}>
                         <TableCell>
-                          <Image src={banner.imageUrl} alt={banner.title} width={120} height={40} className="rounded-md object-cover" />
+                          <Image src={getFullImageUrl(banner.imageUrl)} alt={banner.title} width={120} height={40} className="rounded-md object-cover" />
                         </TableCell>
                         <TableCell className="font-medium">{banner.title}</TableCell>
                         <TableCell><Badge variant={banner.status === 'Active' ? 'secondary' : 'outline'}>{banner.status}</Badge></TableCell>
@@ -844,5 +851,3 @@ export function MarketplaceClient({ initialData }: MarketplaceClientProps) {
     </div>
   );
 }
-
-    
