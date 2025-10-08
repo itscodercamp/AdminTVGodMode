@@ -2,40 +2,96 @@
 'use server';
 
 import sqlite3 from 'sqlite3';
-import { open, type Database } from 'sqlite';
 import path from 'path';
 import bcrypt from 'bcryptjs';
 
-// This is a singleton to ensure we only have one database connection.
-let db: Database<sqlite3.Database, sqlite3.Statement> | null = null;
+// --- Start of New SQLite3 Wrapper ---
 
-async function getDb() {
-  if (!db) {
-    // Use the SQLITE_PATH from environment variable if it exists, otherwise default to dev.db in the project root.
-    // This makes the database path configurable for different environments (like Docker).
-    const dbPath = process.env.SQLITE_PATH || path.join(process.cwd(), 'dev.db');
-    
-    console.log(`Database path: ${dbPath}`);
-    try {
-        db = await open({
-            filename: dbPath,
-            driver: sqlite3.Database,
+// Use verbose mode for better debugging in development
+const db_path = process.env.SQLITE_PATH || path.join(process.cwd(), 'dev.db');
+const db = new sqlite3.Database(db_path, (err) => {
+    if (err) {
+        console.error('Failed to open database:', err.message);
+    } else {
+        console.log(`Database connection established to: ${db_path}`);
+        // Enable foreign key support
+        db.run('PRAGMA foreign_keys = ON;', (fk_err) => {
+          if(fk_err) {
+            console.error('Failed to enable foreign keys:', fk_err.message);
+          } else {
+            console.log("Foreign key support enabled.");
+          }
         });
-        console.log("Database connection established.");
-    } catch(err) {
-        console.error("Failed to open database:", err);
-        throw err;
     }
-  }
-  return db;
+});
+
+/**
+ * Executes a query that returns multiple rows.
+ * @param sql The SQL query string.
+ * @param params The parameters for the query.
+ * @returns A promise that resolves with an array of rows.
+ */
+function runQuery<T>(sql: string, params: any[] = []): Promise<T[]> {
+    return new Promise((resolve, reject) => {
+        db.all(sql, params, (err, rows) => {
+            if (err) {
+                console.error('DB Query Error:', err.message);
+                reject(err);
+            } else {
+                resolve(rows as T[]);
+            }
+        });
+    });
 }
+
+/**
+ * Executes a statement (INSERT, UPDATE, DELETE).
+ * @param sql The SQL query string.
+ * @param params The parameters for the query.
+ * @returns A promise that resolves with the number of rows changed.
+ */
+function runStatement(sql: string, params: any[] = []): Promise<{ changes?: number }> {
+    return new Promise((resolve, reject) => {
+        db.run(sql, params, function (err) {
+            if (err) {
+                console.error('DB Statement Error:', err.message);
+                reject(err);
+            } else {
+                resolve({ changes: this.changes });
+            }
+        });
+    });
+}
+
+/**
+ * Executes a query that returns a single row.
+ * @param sql The SQL query string.
+ * @param params The parameters for the query.
+ * @returns A promise that resolves with a single row or undefined.
+ */
+function getSingleRow<T>(sql: string, params: any[] = []): Promise<T | undefined> {
+    return new Promise((resolve, reject) => {
+        db.get(sql, params, (err, row) => {
+            if (err) {
+                console.error('DB getSingleRow Error:', err.message);
+                reject(err);
+            } else {
+                resolve(row as T | undefined);
+            }
+        });
+    });
+}
+
+// --- End of New SQLite3 Wrapper ---
 
 
 async function initializeDb() {
-  const db = await getDb();
   console.log("Running database migrations...");
 
-  await db.exec(`
+  // Using a simplified exec-like function with runStatement
+  const exec = async (sql: string) => runStatement(sql);
+
+  await exec(`
       CREATE TABLE IF NOT EXISTS User (
           id TEXT PRIMARY KEY,
           email TEXT NOT NULL UNIQUE,
@@ -51,7 +107,7 @@ async function initializeDb() {
       );
   `);
   
-  await db.exec(`
+  await exec(`
       CREATE TABLE IF NOT EXISTS Dealer (
           id TEXT PRIMARY KEY,
           dealershipName TEXT NOT NULL,
@@ -66,7 +122,7 @@ async function initializeDb() {
       );
   `);
 
-  await db.exec(`
+  await exec(`
       CREATE TABLE IF NOT EXISTS ContactSubmission (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
@@ -79,7 +135,7 @@ async function initializeDb() {
       );
   `);
   
-  await db.exec(`
+  await exec(`
       CREATE TABLE IF NOT EXISTS Inspection (
           id TEXT PRIMARY KEY,
           fullName TEXT,
@@ -102,7 +158,7 @@ async function initializeDb() {
       );
   `);
 
-   await db.exec(`
+   await exec(`
       CREATE TABLE IF NOT EXISTS SellCarRequest (
           id TEXT PRIMARY KEY,
           make TEXT,
@@ -124,7 +180,7 @@ async function initializeDb() {
       );
     `);
     
-    await db.exec(`
+    await exec(`
       CREATE TABLE IF NOT EXISTS WebsiteInspectionRequest (
           id TEXT PRIMARY KEY,
           fullName TEXT NOT NULL,
@@ -143,7 +199,7 @@ async function initializeDb() {
       );
     `);
 
-    await db.exec(`
+    await exec(`
       CREATE TABLE IF NOT EXISTS MarketplaceVehicle (
           id TEXT PRIMARY KEY,
           category TEXT,
@@ -191,7 +247,7 @@ async function initializeDb() {
       );
     `);
 
-    await db.exec(`
+    await exec(`
       CREATE TABLE IF NOT EXISTS MarketplaceBanner (
           id TEXT PRIMARY KEY,
           title TEXT NOT NULL,
@@ -202,7 +258,7 @@ async function initializeDb() {
       );
     `);
 
-    await db.exec(`
+    await exec(`
       CREATE TABLE IF NOT EXISTS MarketplaceUser (
           id TEXT PRIMARY KEY,
           userType TEXT NOT NULL,
@@ -220,7 +276,7 @@ async function initializeDb() {
       );
     `);
 
-    await db.exec(`
+    await exec(`
         CREATE TABLE IF NOT EXISTS MarketplaceInquiry (
             id TEXT PRIMARY KEY,
             vehicleId TEXT NOT NULL,
@@ -232,7 +288,7 @@ async function initializeDb() {
         );
     `);
 
-    await db.exec(`
+    await exec(`
         CREATE TABLE IF NOT EXISTS MarketplaceContact (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
@@ -244,12 +300,12 @@ async function initializeDb() {
     `);
 
   // Add default admin user if not exists
-  const adminUser = await db.get('SELECT * FROM User WHERE email = ?', 'trustedvehiclesofficial@gmail.com');
+  const adminUser = await getSingleRow('SELECT * FROM User WHERE email = ?', ['trustedvehiclesofficial@gmail.com']);
   if (!adminUser) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash('5911@Trusted_Vehicles', salt);
     
-    await db.run(
+    await runStatement(
         'INSERT INTO User (id, email, name, password, phone, dob, joiningDate, designation, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [
             'admin-user-01',
@@ -275,22 +331,5 @@ initializeDb().catch(err => {
     process.exit(1);
 });
 
-
-// Helper function to run a query that expects multiple rows
-export async function runQuery<T>(sql: string, params: any[] = []): Promise<T[]> {
-    const db = await getDb();
-    return db.all<T[]>(sql, params);
-}
-
-// Helper function to execute a statement (INSERT, UPDATE, DELETE)
-export async function runStatement(sql: string, params: any[] = []): Promise<{ changes?: number }> {
-    const db = await getDb();
-    const result = await db.run(sql, params);
-    return { changes: result.changes };
-}
-
-// Function to fetch a single row
-export async function getSingleRow<T>(sql: string, params: any[] = []): Promise<T | undefined> {
-    const db = await getDb();
-    return db.get<T>(sql, params);
-}
+// Re-export the new wrapper functions
+export { runQuery, runStatement, getSingleRow };
