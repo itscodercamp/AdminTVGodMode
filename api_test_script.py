@@ -6,7 +6,7 @@ from typing import List, Dict, Any
 # --- Configuration ---
 # Aap yahan apna production URL daal sakte hain.
 # Agar aap local par test kar rahe hain, toh yeh NEXT_PUBLIC_APP_URL environment variable se lega.
-BASE_URL = os.environ.get("NEXT_PUBLIC_APP_URL", "http://localhost:3000")
+BASE_URL = os.environ.get("NEXT_PUBLIC_APP_URL", "https://apis.trustedvehicles.com")
 
 VEHICLES_ENDPOINT = "/api/marketplace/vehicles"
 BANNERS_ENDPOINT = "/api/marketplace/banners"
@@ -33,16 +33,19 @@ def print_table(headers: List[str], data: List[Dict[str, Any]], url_base: str):
         print("\n  --> No data returned from the API.")
         return
 
+    # Process data to create full image URLs before calculating widths
+    processed_data = []
+    for row in data:
+        new_row = row.copy()
+        if 'imageUrl' in new_row and new_row['imageUrl'] and not str(new_row['imageUrl']).startswith('http'):
+            new_row['imageUrl'] = f"{url_base}{new_row['imageUrl']}"
+        processed_data.append(new_row)
+
     # Column widths ko calculate karein
     col_widths = {header: len(header) for header in headers}
-    for row in data:
+    for row in processed_data:
         for header in headers:
-            # Full URL banane ke liye logic
-            value = row.get(header)
-            if header == 'imageUrl' and value and not value.startswith('http'):
-                 value = f"{url_base}{value}"
-
-            cell_len = len(str(value)) if value is not None else 4
+            cell_len = len(str(row.get(header, "N/A")))
             if cell_len > col_widths[header]:
                 col_widths[header] = cell_len
 
@@ -52,14 +55,10 @@ def print_table(headers: List[str], data: List[Dict[str, Any]], url_base: str):
     print("-" * len(header_line))
 
     # Data rows print karein
-    for row in data:
+    for row in processed_data:
         row_values = []
         for header in headers:
             value = row.get(header, "N/A")
-            # Image URL ke liye full path banayein
-            if header == 'imageUrl' and value and not str(value).startswith('http'):
-                value = f"{url_base}{value}"
-            
             row_values.append(str(value).ljust(col_widths[header]))
         print(" | ".join(row_values))
     print("-" * len(header_line))
@@ -100,7 +99,7 @@ def test_marketplace_api():
 
     # === BANNERS API TEST ===
     print_header("Testing Marketplace Banners API")
-    banners_url = f"{BASEURL}{BANNERS_ENDPOINT}"
+    banners_url = f"{BASE_URL}{BANNERS_ENDPOINT}"
     print(f"Requesting data from: {banners_url}\n")
 
     try:
