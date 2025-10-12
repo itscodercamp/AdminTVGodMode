@@ -42,13 +42,13 @@ import { BannerForm } from "@/components/banner-form";
 import { getMarketplaceInquiries, FullInquiry, updateMarketplaceInquiryStatus, deleteMarketplaceInquiry } from "@/lib/marketplace-inquiries";
 import { getMarketplaceContactMessages, MarketplaceContact, updateMarketplaceContactStatus, deleteMarketplaceContact } from "@/lib/marketplace-contact";
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
-
 const getFullImageUrl = (path: string | null | undefined) => {
   if (!path) return 'https://placehold.co/100x60/eee/ccc?text=No+Image';
   if (path.startsWith('http')) return path;
-  return `${appUrl}${path}`;
+  // Use the new API route for images
+  return `/api/images${path.startsWith('/') ? '' : '/'}${path}`;
 };
+
 
 const pendingVehicles: any[] = [];
 

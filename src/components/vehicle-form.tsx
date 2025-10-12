@@ -23,12 +23,10 @@ import { Switch } from "./ui/switch";
 import { Loader2, UploadCloud } from "lucide-react";
 import Image from "next/image";
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
-
 const getFullImageUrl = (path: string | null | undefined) => {
   if (!path) return null;
   if (path.startsWith('http') || path.startsWith('blob:')) return path;
-  return `${appUrl}${path}`;
+  return `/api/images${path.startsWith('/') ? '' : '/'}${path}`;
 };
 
 

@@ -7,12 +7,10 @@ import { Badge } from "./ui/badge";
 import { cn } from "@/lib/utils";
 import { differenceInDays, parseISO, format } from "date-fns";
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
-
 const getFullImageUrl = (path: string | null | undefined) => {
   if (!path) return null;
-  if (path.startsWith('http')) return path;
-  return `${appUrl}${path}`;
+  if (path.startsWith('http') || path.startsWith('blob:')) return path;
+  return `/api/images${path.startsWith('/') ? '' : '/'}${path}`;
 };
 
 
