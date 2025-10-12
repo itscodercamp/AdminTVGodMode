@@ -18,14 +18,14 @@ const remotePatterns: NextConfig['images']['remotePatterns'] = [
     pathname: '/**',
   },
   {
-    protocol: 'https'
-    ,
+    protocol: 'https',
     hostname: 'picsum.photos',
     port: '',
     pathname: '/**',
   },
 ];
 
+// Add the app's own URL to the list of allowed image domains.
 if (appUrl) {
   remotePatterns.push({
     protocol: appUrl.startsWith('localhost') ? 'http' : 'https',
