@@ -21,6 +21,7 @@ export async function POST(request: Request) {
         }
     }
 
+    // Pass the entire body object directly to the function
     const newRequest = await addWebsiteInspection(body);
 
     return NextResponse.json({ message: 'Website inspection request submitted successfully', request: newRequest }, { status: 201, headers: CORS_HEADERS });
