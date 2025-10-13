@@ -13,13 +13,14 @@ const CORS_HEADERS = {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, phone, subject, message } = body;
+    const { name, email, subject, message } = body;
 
     if (!name || !email || !subject || !message) {
       return NextResponse.json({ message: 'Missing required fields' }, { status: 400, headers: CORS_HEADERS });
     }
 
-    const newSubmission = await addContactSubmission({ name, email, phone, subject, message });
+    // Pass the whole body object to the function
+    const newSubmission = await addContactSubmission(body);
 
     return NextResponse.json({ message: 'Submission successful', submission: newSubmission }, { status: 201, headers: CORS_HEADERS });
   } catch (error) {
