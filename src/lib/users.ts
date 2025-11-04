@@ -3,6 +3,7 @@
 
 import { runQuery, runStatement } from './db';
 import { emitSocketEvent } from './socket';
+import bcrypt from 'bcryptjs';
 
 // Re-defining the User type as Prisma is removed
 export type User = {
@@ -48,6 +49,11 @@ export async function addUser(userData: Omit<User, 'id' | 'status'>): Promise<Om
         newIdNumber = lastNumber + 1;
     }
     const employeeId = `TVE-${String(newIdNumber).padStart(6, '0')}`;
+    
+    // Hash the password before saving
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(userData.password, salt);
+
 
     const sql = `
         INSERT INTO User (id, email, name, password, phone, dob, joiningDate, designation, status)
@@ -57,7 +63,7 @@ export async function addUser(userData: Omit<User, 'id' | 'status'>): Promise<Om
         employeeId,
         userData.email,
         userData.name,
-        userData.password, // In a real app, hash this password!
+        hashedPassword,
         userData.phone,
         userData.dob,
         userData.joiningDate || new Date().toISOString(),
@@ -79,8 +85,12 @@ export async function updateUser(id: string, userData: Partial<User>): Promise<O
 
     const fieldsToUpdate = { ...user, ...userData };
     
-    // If password is in userData and it's empty or null, don't update it
-    const passwordUpdate = (userData.password && userData.password.length > 0) ? userData.password : user.password;
+    // If password is in userData and it's not empty, hash it for update. Otherwise, keep the old one.
+    let passwordToUpdate = user.password;
+    if (userData.password && userData.password.length > 0) {
+        const salt = await bcrypt.genSalt(10);
+        passwordToUpdate = await bcrypt.hash(userData.password, salt);
+    }
     
     const sql = `
         UPDATE User
@@ -96,11 +106,11 @@ export async function updateUser(id: string, userData: Partial<User>): Promise<O
         fieldsToUpdate.joiningDate,
         fieldsToUpdate.designation,
         fieldsToUpdate.status,
-        passwordUpdate,
+        passwordToUpdate,
         id
     ]);
 
-    const { password, ...updatedUser } = { ...fieldsToUpdate, id };
+    const { password, ...updatedUser } = { ...fieldsToUpdate, id, password: passwordToUpdate };
 
     const users = await getUsers();
     emitSocketEvent('update-counts', { users: users.length });

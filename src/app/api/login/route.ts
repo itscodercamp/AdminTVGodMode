@@ -50,5 +50,3 @@ export async function POST(request: Request) {
 export async function OPTIONS(request: Request) {
   return new Response(null, { status: 204, headers: CORS_HEADERS });
 }
-
-    
