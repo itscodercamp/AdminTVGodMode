@@ -5,9 +5,8 @@ from typing import List, Dict, Any
 
 # --- Configuration ---
 # Aap yahan apna production URL daal sakte hain.
-# Agar aap local par test kar rahe hain, toh yeh NEXT_PUBLIC_APP_URL environment variable se lega.
-# Defaulting to localhost if NEXT_PUBLIC_APP_URL is not set.
-BASE_URL = os.environ.get("NEXT_PUBLIC_APP_URL", "http://localhost:3000")
+# Abhi ke liye, hum development URL ka istemaal kar rahe hain.
+BASE_URL = "https://9000-firebase-studio-1757611792048.cluster-ancjwrkgr5dvux4qug5rbzyc2y.cloudworkstations.dev"
 
 VEHICLES_ENDPOINT = "/api/marketplace/vehicles"
 BANNERS_ENDPOINT = "/api/marketplace/banners"
