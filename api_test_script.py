@@ -27,31 +27,37 @@ def print_error(message: str, details: str):
         print(f"  DETAILS: {details}")
     print("!"*80)
 
+def print_vehicle_details(vehicle: Dict[str, Any], index: int):
+    """Prints the detailed content of a single vehicle."""
+    make = vehicle.get('make', 'N/A')
+    model = vehicle.get('model', 'N/A')
+    print("\n" + "-"*40)
+    print(f"Vehicle {index + 1}: {make} {model}")
+    print("-"*40)
+    for key, value in vehicle.items():
+        # Shorten long image paths for cleaner output
+        if isinstance(value, str) and ('uploads/' in value or value.startswith('http')):
+            display_value = '...' + value[-40:] if len(value) > 40 else value
+        else:
+            display_value = value
+        print(f"  - {key}: {display_value}")
+
 def print_table(headers: List[str], data: List[Dict[str, Any]], url_base: str):
-    """Prints data in a formatted table."""
+    """Prints data in a formatted table (used for Banners)."""
     if not data:
         print("\n  --> No data returned from the API.")
         return
 
-    # Process data to create full image URLs before calculating widths
     processed_data = []
     for row in data:
         new_row = row.copy()
-        # The API should return full URLs, but as a fallback, we construct them if they are relative.
         if 'imageUrl' in new_row and new_row['imageUrl'] and not str(new_row['imageUrl']).startswith('http'):
-            # This logic assumes image URLs are relative to the /api/images endpoint.
-            # In the new setup, the API returns the full path, but the client needs to prepend the BASE_URL.
-            # However, for this script, let's assume the API might return relative paths like /uploads/...
-            # which are served by /api/images/uploads/...
-            # Let's adjust this to reflect what the frontend would do
             image_path = new_row['imageUrl']
             if not image_path.startswith('/'):
                 image_path = '/' + image_path
             new_row['imageUrl'] = f"{url_base}/api/images{image_path}"
-
         processed_data.append(new_row)
 
-    # Column widths ko calculate karein
     col_widths = {header: len(header) for header in headers}
     for row in processed_data:
         for header in headers:
@@ -59,12 +65,10 @@ def print_table(headers: List[str], data: List[Dict[str, Any]], url_base: str):
             if cell_len > col_widths[header]:
                 col_widths[header] = cell_len
 
-    # Header print karein
     header_line = " | ".join(header.upper().ljust(col_widths[header]) for header in headers)
     print("\n" + header_line)
     print("-" * len(header_line))
 
-    # Data rows print karein
     for row in processed_data:
         row_values = []
         for header in headers:
@@ -80,7 +84,7 @@ def test_marketplace_api():
     """Main function to run the API tests."""
     
     # === VEHICLES API TEST ===
-    print_header("Testing Marketplace Vehicles API")
+    print_header("Testing Marketplace Vehicles API (Detailed View)")
     vehicles_url = f"{BASE_URL}{VEHICLES_ENDPOINT}"
     print(f"Requesting data from: {vehicles_url}\n")
     
@@ -94,9 +98,11 @@ def test_marketplace_api():
         
         if isinstance(vehicles_data, list):
             print(f"Success! Received {len(vehicles_data)} vehicle listings.")
-            vehicle_headers = ['id', 'make', 'model', 'price', 'odometer', 'imageUrl']
-            # We don't need to pass url_base anymore if API returns full paths, but let's keep it for fallback.
-            print_table(vehicle_headers, vehicles_data, BASE_URL)
+            if not vehicles_data:
+                print("\n  --> No vehicles returned from the API.")
+            else:
+                for i, vehicle in enumerate(vehicles_data):
+                    print_vehicle_details(vehicle, i)
         else:
             print_error("Unexpected data format.", f"Expected a list of vehicles, but got: {type(vehicles_data)}")
 
