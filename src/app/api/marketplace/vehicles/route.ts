@@ -15,20 +15,8 @@ export async function GET(request: Request) {
     const allVehicles = await getMarketplaceVehicles();
     const liveVehicles = allVehicles.filter(v => v.status === 'For Sale');
 
-    // User ne jo fields maange hain, sirf wahi return karein
-    const simplifiedVehicles = liveVehicles.map(v => ({
-        id: v.id,
-        make: v.make,
-        model: v.model,
-        variant: v.variant,
-        price: v.price,
-        fuelType: v.fuelType,
-        odometer: v.odometer,
-        rtoState: v.rtoState,
-        imageUrl: v.imageUrl, // imageUrl zaroori hai
-    }));
-
-    return NextResponse.json(simplifiedVehicles, { status: 200, headers: CORS_HEADERS });
+    // Return the full vehicle object, not a simplified one.
+    return NextResponse.json(liveVehicles, { status: 200, headers: CORS_HEADERS });
   } catch (error) {
     const err = error as Error;
     console.error("Marketplace GET Vehicles API Error:", err);
