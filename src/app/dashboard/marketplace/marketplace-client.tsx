@@ -260,7 +260,7 @@ export function MarketplaceClient({ initialData }: MarketplaceClientProps) {
       </div>
 
       <Tabs defaultValue="live" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 md:grid-cols-8">
+        <TabsList className="flex flex-wrap h-auto">
           <TabsTrigger value="inquiries">New Inquiries</TabsTrigger>
           <TabsTrigger value="live">Live Vehicles</TabsTrigger>
           <TabsTrigger value="pending">Pending Approval</TabsTrigger>
@@ -851,3 +851,5 @@ export function MarketplaceClient({ initialData }: MarketplaceClientProps) {
     </div>
   );
 }
+
+    
