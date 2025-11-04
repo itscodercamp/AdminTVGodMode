@@ -72,6 +72,12 @@ export async function getMarketplaceVehicles(): Promise<MarketplaceVehicle[]> {
     return vehicles.map(parseVehicle);
 }
 
+export async function getMarketplaceVehicleById(id: string): Promise<MarketplaceVehicle | null> {
+    const vehicle = await getSingleRow<any>('SELECT * FROM MarketplaceVehicle WHERE id = ?', [id]);
+    if (!vehicle) return null;
+    return parseVehicle(vehicle);
+}
+
 export async function addMarketplaceVehicle(vehicleData: VehicleFormData): Promise<MarketplaceVehicle> {
     const id = uuidv4();
     const createdAt = new Date().toISOString();
