@@ -6,7 +6,8 @@ from typing import List, Dict, Any
 # --- Configuration ---
 # Aap yahan apna production URL daal sakte hain.
 # Agar aap local par test kar rahe hain, toh yeh NEXT_PUBLIC_APP_URL environment variable se lega.
-BASE_URL = os.environ.get("NEXT_PUBLIC_APP_URL", "https://apis.trustedvehicles.com")
+# Defaulting to localhost if NEXT_PUBLIC_APP_URL is not set.
+BASE_URL = os.environ.get("NEXT_PUBLIC_APP_URL", "http://localhost:3000")
 
 VEHICLES_ENDPOINT = "/api/marketplace/vehicles"
 BANNERS_ENDPOINT = "/api/marketplace/banners"
@@ -37,8 +38,18 @@ def print_table(headers: List[str], data: List[Dict[str, Any]], url_base: str):
     processed_data = []
     for row in data:
         new_row = row.copy()
+        # The API should return full URLs, but as a fallback, we construct them if they are relative.
         if 'imageUrl' in new_row and new_row['imageUrl'] and not str(new_row['imageUrl']).startswith('http'):
-            new_row['imageUrl'] = f"{url_base}{new_row['imageUrl']}"
+            # This logic assumes image URLs are relative to the /api/images endpoint.
+            # In the new setup, the API returns the full path, but the client needs to prepend the BASE_URL.
+            # However, for this script, let's assume the API might return relative paths like /uploads/...
+            # which are served by /api/images/uploads/...
+            # Let's adjust this to reflect what the frontend would do
+            image_path = new_row['imageUrl']
+            if not image_path.startswith('/'):
+                image_path = '/' + image_path
+            new_row['imageUrl'] = f"{url_base}/api/images{image_path}"
+
         processed_data.append(new_row)
 
     # Column widths ko calculate karein
@@ -85,6 +96,7 @@ def test_marketplace_api():
         if isinstance(vehicles_data, list):
             print(f"Success! Received {len(vehicles_data)} vehicle listings.")
             vehicle_headers = ['id', 'make', 'model', 'price', 'odometer', 'imageUrl']
+            # We don't need to pass url_base anymore if API returns full paths, but let's keep it for fallback.
             print_table(vehicle_headers, vehicles_data, BASE_URL)
         else:
             print_error("Unexpected data format.", f"Expected a list of vehicles, but got: {type(vehicles_data)}")

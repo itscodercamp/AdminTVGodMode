@@ -1,8 +1,8 @@
 import type {NextConfig} from 'next';
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL
-  ? new URL(process.env.NEXT_PUBLIC_APP_URL).hostname
-  : '';
+  ? new URL(process.env.NEXT_PUBLIC_APP_URL)
+  : undefined;
 
 const remotePatterns: NextConfig['images']['remotePatterns'] = [
   {
@@ -28,9 +28,9 @@ const remotePatterns: NextConfig['images']['remotePatterns'] = [
 // Add the app's own URL to the list of allowed image domains.
 if (appUrl) {
   remotePatterns.push({
-    protocol: appUrl.startsWith('localhost') ? 'http' : 'https',
-    hostname: appUrl,
-    port: '',
+    protocol: appUrl.protocol.slice(0, -1), // remove the trailing ':'
+    hostname: appUrl.hostname,
+    port: appUrl.port,
     pathname: '/**',
   });
 }
