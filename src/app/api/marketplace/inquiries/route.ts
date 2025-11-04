@@ -14,7 +14,7 @@ const InquirySchema = z.object({
 
 const CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
-    'Access-control-allow-methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
