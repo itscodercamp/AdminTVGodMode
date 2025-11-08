@@ -37,7 +37,7 @@ import { getMarketplaceVehicles, MarketplaceVehicle, deleteMarketplaceVehicle, u
 import { VehicleForm } from "@/components/vehicle-form";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getBanners, deleteBanner, MarketplaceBanner } from "@/lib/banners";
-import { getMarketplaceUsers, SafeMarketplaceUser } from "@/lib/marketplace-users";
+import { getMarketplaceUsers, SafeMarketplaceUser, deleteMarketplaceUser } from "@/lib/marketplace-users";
 import { BannerForm } from "@/components/banner-form";
 import { getMarketplaceInquiries, FullInquiry, updateMarketplaceInquiryStatus, deleteMarketplaceInquiry } from "@/lib/marketplace-inquiries";
 import { getMarketplaceContactMessages, MarketplaceContact, updateMarketplaceContactStatus, deleteMarketplaceContact } from "@/lib/marketplace-contact";
@@ -83,7 +83,7 @@ export function MarketplaceClient({ initialData }: MarketplaceClientProps) {
     const [soldCategoryFilter, setSoldCategoryFilter] = React.useState<'all' | '4w' | '2w'>('all');
     const [viewingItem, setViewingItem] = React.useState<ItemDetails | null>(null);
     const [editingItem, setEditingItem] = React.useState<ItemDetails | null>(null);
-    const [actionItem, setActionItem] = React.useState<{ type: 'delist' | 'reject' | 'delete' | 'approve' | 'delete-banner' | 'delete-inquiry' | 'delete-message', data: any } | null>(null);
+    const [actionItem, setActionItem] = React.useState<{ type: 'delist' | 'reject' | 'delete' | 'approve' | 'delete-banner' | 'delete-inquiry' | 'delete-message' | 'delete-user', data: any } | null>(null);
     const [isSheetOpen, setIsSheetOpen] = React.useState(false);
     const [isBannerSheetOpen, setIsBannerSheetOpen] = React.useState(false);
 
@@ -220,6 +220,11 @@ export function MarketplaceClient({ initialData }: MarketplaceClientProps) {
                     success = await deleteMarketplaceContact(actionItem.data.id);
                     successMessage = `Successfully deleted message ${actionItem.data.id}.`;
                     failureMessage = `Could not delete message ${actionItem.data.id}.`;
+                    break;
+                case 'delete-user':
+                    success = await deleteMarketplaceUser(actionItem.data.id);
+                    successMessage = `Successfully deleted user ${actionItem.data.fullName}.`;
+                    failureMessage = `Could not delete user ${actionItem.data.fullName}.`;
                     break;
                 default:
                     // For mock actions like approve/reject
@@ -652,7 +657,7 @@ export function MarketplaceClient({ initialData }: MarketplaceClientProps) {
                                         <DropdownMenuItem onClick={() => setViewingItem({ type: 'Customer', data: user })}>View Details</DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => setEditingItem({ type: 'Customer', data: user })}>Edit</DropdownMenuItem>
                                         <DropdownMenuSeparator/>
-                                        <DropdownMenuItem className="text-red-600" onClick={() => setActionItem({ type: 'delete', data: user })}>Delete User</DropdownMenuItem>
+                                        <DropdownMenuItem className="text-red-600" onSelect={(e) => e.preventDefault()} onClick={() => setActionItem({ type: 'delete-user', data: user })}>Delete User</DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </TableCell>
@@ -711,7 +716,7 @@ export function MarketplaceClient({ initialData }: MarketplaceClientProps) {
                                         <DropdownMenuItem onClick={() => setViewingItem({ type: 'Dealer', data: dealer })}>View Details</DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => setEditingItem({ type: 'Dealer', data: dealer })}>Edit</DropdownMenuItem>
                                         <DropdownMenuSeparator/>
-                                        <DropdownMenuItem className="text-red-600" onClick={() => setActionItem({ type: 'delete', data: dealer })}>Delete User</DropdownMenuItem>
+                                        <DropdownMenuItem className="text-red-600" onSelect={(e) => e.preventDefault()} onClick={() => setActionItem({ type: 'delete-user', data: dealer })}>Delete User</DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </TableCell>
@@ -851,5 +856,3 @@ export function MarketplaceClient({ initialData }: MarketplaceClientProps) {
     </div>
   );
 }
-
-    

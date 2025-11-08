@@ -98,3 +98,13 @@ export async function createMarketplaceUser(userData: MarketplaceUserRegistratio
 export async function verifyPassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
     return bcrypt.compare(plainPassword, hashedPassword);
 }
+
+export async function deleteMarketplaceUser(id: string): Promise<boolean> {
+    try {
+        const result = await runStatement('DELETE FROM MarketplaceUser WHERE id = ?', [id]);
+        return (result.changes ?? 0) > 0;
+    } catch (error) {
+        console.error("Failed to delete marketplace user:", error);
+        return false;
+    }
+}
