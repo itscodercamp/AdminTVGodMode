@@ -120,7 +120,7 @@ const ImageUploadField = ({
         )}
         <Input
           type="file"
-          accept="image/*"
+          accept="image/jpeg, image/png, image/webp, image/gif"
           className="hidden"
           ref={fileInputRef}
           onChange={handleFileChange}
@@ -226,6 +226,7 @@ export function VehicleForm({ vehicle, onFormSubmit }: VehicleFormProps) {
   const uploadFile = async (file: File): Promise<string | null> => {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('destination', 'vehicles'); // Save to public/vehicles
 
     try {
         const response = await fetch('/api/upload', {
