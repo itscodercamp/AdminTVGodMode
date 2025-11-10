@@ -23,11 +23,11 @@ type ApiTestClientProps = {
 };
 
 // Helper to get a full image URL
-const getFullImageUrl = (path: string | null | undefined) => {
+const getFullImageUrl = (path: string | null | undefined, baseUrl: string) => {
   if (!path) return 'https://placehold.co/100x60/eee/ccc?text=No+Image';
   if (path.startsWith('http')) return path;
   // Use the API route for images
-  return `/api/images${path.startsWith('/') ? '' : '/'}${path}`;
+  return `${baseUrl}/api/images${path.startsWith('/') ? '' : '/'}${path}`;
 };
 
 
@@ -73,7 +73,7 @@ export function ApiTestClient({ initialData }: ApiTestClientProps) {
                 <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="md:col-span-1">
                         <Image
-                            src={getFullImageUrl(vehicle.imageUrl)}
+                            src={getFullImageUrl(vehicle.imageUrl, baseUrl)}
                             alt={`${vehicle.make} ${vehicle.model}`}
                             width={300}
                             height={200}
@@ -117,7 +117,7 @@ export function ApiTestClient({ initialData }: ApiTestClientProps) {
             banners.map((banner, index) => (
               <Card key={index} className="overflow-hidden">
                  <Image
-                    src={getFullImageUrl(banner.imageUrl)}
+                    src={getFullImageUrl(banner.imageUrl, baseUrl)}
                     alt={banner.title}
                     width={400}
                     height={150}

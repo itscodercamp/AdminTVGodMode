@@ -1,5 +1,5 @@
 
-import { ApiTestClient } from './api-test-client';
+import { ApiTestClient } from './api-test-client.tsx';
 import type { MarketplaceVehicle } from '@/lib/marketplace';
 
 type Banner = {
@@ -16,10 +16,9 @@ type ApiTestData = {
 
 // We fetch the data on the server side.
 async function getPageData(): Promise<ApiTestData> {
-    // This URL needs to be the one the browser can reach, which in the dev environment
-    // is the forwarded URL, and in production is the actual domain.
-    // We rely on the NEXT_PUBLIC_APP_URL which should be set in the environment.
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    // This URL needs to be the one the browser can reach.
+    // We rely on the NEXT_PUBLIC_API_URL which should be set in the environment.
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
     
     try {
         const [vehiclesRes, bannersRes] = await Promise.all([

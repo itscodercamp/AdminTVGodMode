@@ -27,6 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import React from "react";
 import {
@@ -39,33 +40,40 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Inspection, getInspections, deleteInspection, updateInspectionStatus } from "@/lib/inspections";
+import { PDIInspection, getPDIInspections, deletePDIInspection, updatePDIInspectionStatus } from "@/lib/pdi-inspections";
 import { getUsers, User } from "@/lib/users";
 import { InspectionDetails } from "@/components/inspection-details";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { PDIInspectionDetails } from "@/components/pdi-inspection-details";
 
 type InspectionsClientProps = {
   initialInspections: Inspection[];
+  initialPDIInspections: PDIInspection[];
   initialUsers: User[];
 }
 
-export function InspectionsClient({ initialInspections, initialUsers }: InspectionsClientProps) {
+export function InspectionsClient({ initialInspections, initialPDIInspections, initialUsers }: InspectionsClientProps) {
   const { toast } = useToast();
   const [inspections, setInspections] = React.useState<Inspection[]>(initialInspections);
+  const [pdiInspections, setPDIInspections] = React.useState<PDIInspection[]>(initialPDIInspections);
   const [users, setUsers] = React.useState<User[]>(initialUsers);
   const [isLoading, setIsLoading] = React.useState(false);
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
   const [editingInspection, setEditingInspection] = React.useState<Inspection | null>(null);
   const [viewingInspection, setViewingInspection] = React.useState<Inspection | null>(null);
+  const [viewingPDIInspection, setViewingPDIInspection] = React.useState<PDIInspection | null>(null);
 
   const fetchData = React.useCallback(async () => {
     setIsLoading(true);
     try {
-      const [fetchedInspections, fetchedUsers] = await Promise.all([
+      const [fetchedInspections, fetchedPDIInspections, fetchedUsers] = await Promise.all([
         getInspections(),
+        getPDIInspections(),
         getUsers()
       ]);
       setInspections(fetchedInspections);
+      setPDIInspections(fetchedPDIInspections);
       setUsers(fetchedUsers);
     } catch (error) {
       toast({
@@ -102,6 +110,21 @@ export function InspectionsClient({ initialInspections, initialUsers }: Inspecti
         }
     }
   }
+  
+  const handleViewPDIDetails = async (inspection: PDIInspection) => {
+    setViewingPDIInspection(inspection);
+    if (inspection.status === 'New') {
+        const updated = await updatePDIInspectionStatus(inspection.id, 'Viewed');
+        if (updated) {
+            // Assuming we might have notifications for this too
+            // if (window && (window as any).markNotificationAsRead) {
+            //     (window as any).markNotificationAsRead(inspection.id, 'pdi-inspection');
+            // }
+            fetchData();
+        }
+    }
+  };
+
 
   const handleEdit = (inspection: Inspection) => {
     setEditingInspection(inspection);
@@ -121,6 +144,23 @@ export function InspectionsClient({ initialInspections, initialUsers }: Inspecti
         variant: "destructive",
         title: "Deletion Failed",
         description: "Could not delete the inspection.",
+      });
+    }
+  };
+  
+  const handleDeletePDI = async (inspectionId: string) => {
+    const success = await deletePDIInspection(inspectionId);
+    if (success) {
+      toast({
+        title: "PDI Inspection Deleted",
+        description: "The PDI inspection has been successfully deleted.",
+      });
+      fetchData();
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Deletion Failed",
+        description: "Could not delete the PDI inspection.",
       });
     }
   };
@@ -163,108 +203,192 @@ export function InspectionsClient({ initialInspections, initialUsers }: Inspecti
         </Sheet>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>All Inspections</CardTitle>
-          <CardDescription>A list of all scheduled and requested inspections.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Vehicle</TableHead>
-                <TableHead>Inspector</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
-                    <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-                  </TableCell>
-                </TableRow>
-              ) : inspections.length > 0 ? (
-                inspections.map((submission) => (
-                  <TableRow key={submission.id}>
-                    <TableCell className="font-medium">{submission.id}</TableCell>
-                    <TableCell>
-                        <div className="font-medium">{submission.fullName}</div>
-                        <div className="text-sm text-muted-foreground">{submission.phoneNumber}</div>
-                    </TableCell>
-                    <TableCell>
-                        <div>{submission.vehicleMake} {submission.vehicleModel}</div>
-                        <div className="text-sm text-muted-foreground">{submission.registrationNumber}</div>
-                    </TableCell>
-                    <TableCell>{getInspectorName(submission.assignedToId)}</TableCell>
-                    <TableCell>
-                      <Badge variant={
-                        submission.status === 'Completed' ? 'secondary' : 
-                        submission.status === 'Pending' ? 'default' : 
-                        submission.status === 'Viewed' ? 'outline' : 
-                        submission.status === 'Requested' ? 'destructive' : 'default'
-                      }>
-                        {submission.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                        <Badge variant={submission.source === 'API' ? 'outline' : 'default'}>
-                            {submission.source}
-                        </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          {submission.status === 'Requested' && (
-                             <DropdownMenuItem onClick={() => handleAssign(submission)}>Assign Inspector</DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem onClick={() => handleViewDetails(submission)}>View Details</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEdit(submission)}>Edit</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                           <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem className="text-red-600" onSelect={(e) => e.preventDefault()}>Delete</DropdownMenuItem>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                      This will permanently delete the inspection record. This action cannot be undone.
-                                  </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDelete(submission.id)} className="bg-destructive hover:bg-destructive/90">Yes, delete</AlertDialogAction>
-                                  </AlertDialogFooter>
-                              </AlertDialogContent>
-                          </AlertDialog>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
-                    No inspections found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+       <Tabs defaultValue="all-inspections">
+        <TabsList>
+          <TabsTrigger value="all-inspections">All Inspections</TabsTrigger>
+          <TabsTrigger value="pdi-inspections">PDI Inspections</TabsTrigger>
+        </TabsList>
+        <TabsContent value="all-inspections">
+            <Card>
+                <CardHeader>
+                <CardTitle>All Inspections</CardTitle>
+                <CardDescription>A list of all scheduled and requested inspections.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                <Table>
+                    <TableHeader>
+                    <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Vehicle</TableHead>
+                        <TableHead>Inspector</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Source</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                    {isLoading ? (
+                        <TableRow>
+                        <TableCell colSpan={7} className="h-24 text-center">
+                            <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+                        </TableCell>
+                        </TableRow>
+                    ) : inspections.length > 0 ? (
+                        inspections.map((submission) => (
+                        <TableRow key={submission.id}>
+                            <TableCell className="font-medium">{submission.id}</TableCell>
+                            <TableCell>
+                                <div className="font-medium">{submission.fullName}</div>
+                                <div className="text-sm text-muted-foreground">{submission.phoneNumber}</div>
+                            </TableCell>
+                            <TableCell>
+                                <div>{submission.vehicleMake} {submission.vehicleModel}</div>
+                                <div className="text-sm text-muted-foreground">{submission.registrationNumber}</div>
+                            </TableCell>
+                            <TableCell>{getInspectorName(submission.assignedToId)}</TableCell>
+                            <TableCell>
+                            <Badge variant={
+                                submission.status === 'Completed' ? 'secondary' : 
+                                submission.status === 'Pending' ? 'default' : 
+                                submission.status === 'Viewed' ? 'outline' : 
+                                submission.status === 'Requested' ? 'destructive' : 'default'
+                            }>
+                                {submission.status}
+                            </Badge>
+                            </TableCell>
+                            <TableCell>
+                                <Badge variant={submission.source === 'API' ? 'outline' : 'default'}>
+                                    {submission.source}
+                                </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                    <span className="sr-only">Open menu</span>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                {submission.status === 'Requested' && (
+                                    <DropdownMenuItem onClick={() => handleAssign(submission)}>Assign Inspector</DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem onClick={() => handleViewDetails(submission)}>View Details</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEdit(submission)}>Edit</DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem className="text-red-600" onSelect={(e) => e.preventDefault()}>Delete</DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This will permanently delete the inspection record. This action cannot be undone.
+                                        </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDelete(submission.id)} className="bg-destructive hover:bg-destructive/90">Yes, delete</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            </TableCell>
+                        </TableRow>
+                        ))
+                    ) : (
+                        <TableRow>
+                        <TableCell colSpan={7} className="h-24 text-center">
+                            No inspections found.
+                        </TableCell>
+                        </TableRow>
+                    )}
+                    </TableBody>
+                </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
+        <TabsContent value="pdi-inspections">
+            <Card>
+                <CardHeader>
+                <CardTitle>PDI Inspections</CardTitle>
+                <CardDescription>A list of all Pre-Delivery Inspection requests.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Vehicle</TableHead>
+                        <TableHead>City</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {isLoading ? (
+                            <TableRow>
+                            <TableCell colSpan={5} className="h-24 text-center">
+                                <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+                            </TableCell>
+                            </TableRow>
+                        ) : pdiInspections.length > 0 ? (
+                          pdiInspections.map((pdi) => (
+                            <TableRow key={pdi.id}>
+                              <TableCell>
+                                <div className="font-medium">{pdi.name}</div>
+                                <div className="text-sm text-muted-foreground">{pdi.phone}</div>
+                              </TableCell>
+                              <TableCell>{pdi.make} {pdi.model}</TableCell>
+                              <TableCell>{pdi.city}</TableCell>
+                              <TableCell>
+                                <Badge variant={pdi.status === 'New' ? 'default' : 'secondary'}>{pdi.status}</Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => handleViewPDIDetails(pdi)}>View Details</DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                       <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                              <DropdownMenuItem className="text-red-600" onSelect={(e) => e.preventDefault()}>Delete</DropdownMenuItem>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                              <AlertDialogHeader>
+                                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                              <AlertDialogDescription>
+                                                  This will permanently delete the PDI request for "{pdi.name}". This action cannot be undone.
+                                              </AlertDialogDescription>
+                                              </AlertDialogHeader>
+                                              <AlertDialogFooter>
+                                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                              <AlertDialogAction onClick={() => handleDeletePDI(pdi.id)} className="bg-destructive hover:bg-destructive/90">Yes, delete</AlertDialogAction>
+                                              </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                      </AlertDialog>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={5} className="h-24 text-center">No PDI inspections found.</TableCell>
+                          </TableRow>
+                        )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
+      </Tabs>
       
       <Sheet open={!!viewingInspection} onOpenChange={(isOpen) => !isOpen && setViewingInspection(null)}>
         <SheetContent className="sm:max-w-lg">
@@ -279,9 +403,21 @@ export function InspectionsClient({ initialInspections, initialUsers }: Inspecti
             </ScrollArea>
         </SheetContent>
       </Sheet>
+      
+       <Sheet open={!!viewingPDIInspection} onOpenChange={(isOpen) => !isOpen && setViewingPDIInspection(null)}>
+        <SheetContent className="sm:max-w-lg">
+            <SheetHeader>
+                <SheetTitle>PDI Inspection Details</SheetTitle>
+                <SheetDescription>Viewing details for PDI request ID: {viewingPDIInspection?.id.substring(0,8)}</SheetDescription>
+            </SheetHeader>
+            <ScrollArea className="h-[calc(100vh-8rem)]">
+                <div className="py-4 px-1">
+                    {viewingPDIInspection && <PDIInspectionDetails inspection={viewingPDIInspection} />}
+                </div>
+            </ScrollArea>
+        </SheetContent>
+      </Sheet>
 
     </div>
   );
 }
-
-    

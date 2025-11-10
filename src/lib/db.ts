@@ -298,6 +298,49 @@ async function initializeDb() {
             status TEXT NOT NULL
         );
     `);
+    
+    await exec(`
+        CREATE TABLE IF NOT EXISTS LoanRequest (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            email TEXT NOT NULL,
+            make TEXT NOT NULL,
+            model TEXT NOT NULL,
+            variant TEXT,
+            panNumber TEXT NOT NULL,
+            aadharNumber TEXT NOT NULL,
+            status TEXT NOT NULL,
+            createdAt TEXT NOT NULL
+        );
+    `);
+
+    await exec(`
+        CREATE TABLE IF NOT EXISTS InsuranceRenewal (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            registrationNumber TEXT NOT NULL,
+            insuranceType TEXT NOT NULL,
+            status TEXT NOT NULL,
+            createdAt TEXT NOT NULL
+        );
+    `);
+
+    await exec(`
+        CREATE TABLE IF NOT EXISTS PDIInspection (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            email TEXT NOT NULL,
+            city TEXT NOT NULL,
+            make TEXT NOT NULL,
+            model TEXT NOT NULL,
+            status TEXT NOT NULL,
+            createdAt TEXT NOT NULL
+        );
+    `);
+
 
   // Add default admin user if not exists
   const adminUser = await getSingleRow('SELECT * FROM User WHERE email = ?', ['trustedvehiclesofficial@gmail.com']);

@@ -18,6 +18,8 @@ import {
   ShoppingBag,
   Handshake,
   Laptop,
+  Landmark,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,7 +54,7 @@ type SearchResult = {
   path: string;
 }
 
-type NotificationType = 'contact' | 'inspection' | 'sell-request' | 'website-inspection' | 'marketplace-user' | 'marketplace-vehicle' | 'marketplace-banner' | 'marketplace-inquiry' | 'marketplace-contact';
+type NotificationType = 'contact' | 'inspection' | 'sell-request' | 'website-inspection' | 'marketplace-user' | 'marketplace-vehicle' | 'marketplace-banner' | 'marketplace-inquiry' | 'marketplace-contact' | 'loan-request' | 'insurance-renewal' | 'pdi-inspection';
 
 type Notification = {
   id: string;
@@ -73,6 +75,9 @@ const notificationRedirects: Record<NotificationType, string> = {
     'marketplace-banner': '/dashboard/marketplace',
     'marketplace-inquiry': '/dashboard/marketplace',
     'marketplace-contact': '/dashboard/marketplace',
+    'loan-request': '/dashboard/loan-requests',
+    'insurance-renewal': '/dashboard/insurance-renewals',
+    'pdi-inspection': '/dashboard/inspections',
 };
 
 
@@ -267,8 +272,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const navLinks = [
     { href: "/dashboard", icon: Home, label: "Dashboard" },
     { href: "/dashboard/employees", icon: Users, label: "Employees" },
-    { href: "/dashboard/dealers", icon: Building, label: "Dealers" },
+    // { href: "/dashboard/dealers", icon: Building, label: "Dealers" },
     { href: "/dashboard/inspections", icon: ClipboardCheck, label: "Inspections" },
+    { href: "/dashboard/loan-requests", icon: Landmark, label: "Loan Requests" },
+    { href: "/dashboard/insurance-renewals", icon: ShieldCheck, label: "Insurance Renewals" },
     { href: "/dashboard/website-inspections", icon: Laptop, label: "Website Inspections" },
     { href: "/dashboard/contact", icon: FileText, label: "Contact Forms" },
     { href: "/dashboard/sell-requests", icon: Handshake, label: "Sell Requests" },
